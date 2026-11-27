@@ -1,0 +1,23 @@
+{
+  "name": "暑さ指数けいさん",
+  "short_name": "暑さ指数けいさん",
+  "description": "気温・湿度・日なた/日かげから暑さ指数と段階を当てる1日5問",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf1e2",
+  "theme_color": "#fbf1e2",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
