@@ -20,7 +20,7 @@ const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail: 
 const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.evaluate(() => !!(window.Core && Core.coach && Core.coach.active()))) { await q.evaluate(() => { Core.coach.leave(); scrollTo(0, 0); }); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
 const G = createRequire(import.meta.url)(path.join(root, "data.js"));
 
-const PINS = "cin3:3:29.75.60:0,nin36:1:95:2,nkg28:3:55:1,nhn33:2:55:0,nhn25:1:45:1,nhn36:0:85:0,y1954:1:1.2.3,shikinai:1:1.3.0;nin33:2:70:0,alert33:0:2.3,nkg34:1:35:0,nhn33:3:75:1,shikigai:1:3.1.2,nin35:3:80:1,nkg36:1:60:1,nhn36:0:85:0;nhn30:0:45:0,nin33:0:85:0,chn3:3:34.90.75:1,cin2:3:25.30.75:0,hyo:0:0.3.2,nkg36:3:40:2,nin23:0:40:2,nhn36:2:90:0"; // 過去の日の問題の印（変わったら過去の日の問題が変わった印。種類・言い方・選び肢は足すだけでも変わる）
+const PINS = "cin3:3:29.75.60:0:1rhch2e,nin36:1:95:2:i1cc1b,nkg28:3:55:1:195q2rs,nhn33:2:55:0:19btjki,nhn25:1:45:1:mg632b,nhn36:0:85:0:hrj4rb,y1954:1:1.2.3:1yh584p,shikinai:1:1.3.0:1260sjm;nin33:2:70:0:1jbgb4y,alert33:0:2.3:j9fmbp,nkg34:1:35:0:hgmiym,nhn33:3:75:1:1g7bc71,shikigai:1:3.1.2:1pq5xtx,nin35:3:80:1:lhcc4,nkg36:1:60:1:1dmyrj3,nhn36:0:85:0:hrj4rb;nhn30:0:45:0:1oschg2,nin33:0:85:0:1cxsd5w,chn3:3:34.90.75:1:1ib2vgf,cin2:3:25.30.75:0:1ib2vgf,hyo:0:0.3.2:nnei8i,nkg36:3:40:2:kb1xg3,nin23:0:40:2:18bemil,nhn36:2:90:0:77smft"; // 過去の日の問題の印（変わったら過去の日の問題が変わった印。種類・言い方・選び肢は足すだけでも変わる）
 // ---- 1. 問題の作り方（ブラウザを使わない）----
 // 室内用のWBGT簡易推定図 Ver.4（日本生気象学会「日常生活における熱中症予防指針 Ver.4」 https://www.city.bunkyo.lg.jp/documents/2725/ver4.pdf ）。
 // data.js とは別に書き写した（2026-11-27 に読んだ。共有フォルダ games/atsusa-keisan-research.md）。行＝気温、列＝湿度 20,25,…,100%
@@ -68,6 +68,7 @@ const SRCOK = /^https:\/\/(www\.wbgt\.env\.go\.jp\/|www\.city\.bunkyo\.lg\.jp\/d
       if (/^n(in|kg|hn)\d+$/.test(k.id)) {
         const pl = k.id.slice(1, 3), t = Number(k.id.slice(3)), it = P.items[0], w = wb(pl, t, it.h);
         if (it.pl !== pl || it.t !== t || P.ans !== `暑さ指数 ${w}`) why.push("答えが表・式とちがう");
+        if (it.w !== w) why.push("物差しの数が表・式とちがう");
         if (P.grp !== stage(w)) why.push("2段目が表・式とちがう");
         if (!P.q.includes(`気温${t}℃`) || !P.q.includes(`湿度${it.h}%`) || !P.q.includes(G.PLACES[pl].name)) why.push("問いに場所・気温・湿度が無い");
         const ns = P.opts.map((o) => Number(o.replace("暑さ指数 ", ""))).sort((a, b) => a - b);
@@ -128,12 +129,14 @@ const SRCOK = /^https:\/\/(www\.wbgt\.env\.go\.jp\/|www\.city\.bunkyo\.lg\.jp\/d
   check("2か月のうちに39種類が全部出る・前の日と同じ組の日が少ない", cover.size === 39 && sameAsPrev < 20, `${cover.size}種類・前の日と同じ ${sameAsPrev}日`);
   // 過去の日の問題が変わらない（data.js を直したときの見張り。値は 2026-11-27 に作ったもの）
   // 1問目だけでなく、いくつかの日の5問と上級3問の全部（種類と言い方・選び肢の印）を見る（種類や言い方を足すと、全部の日の問題が変わるため。shigaisen-yomi #1 の CodeRabbit）
-  const snap = ["2026-11-27", "2026-11-28", "2027-01-01"].map((d) => [...G.dailyTags(d), ...G.hardTags(d)].map((t) => { const P = G.make(t); return `${P.kind}:${P.v}`; }).join(",")).join(";");
+  const snap = ["2026-11-27", "2026-11-28", "2027-01-01"].map((d) => [...G.dailyTags(d), ...G.hardTags(d)].map((t) => { const P = G.make(t); return `${P.kind}:${P.v}:${G.seedOf(JSON.stringify([P.q, P.opts, P.ans])).toString(36)}`; }).join(",")).join(";"); // 問いと並べた選び肢と答えの印も見る（選び肢の言葉を替えても気づく。PR #1 の CodeRabbit）
   check("過去の日（2026-11-27・11-28・2027-01-01）の5問と上級3問が作ったときのまま（種類・言い方を足す・並べ替える・消すと変わる）", snap === PINS, snap);
 }
 
 // ---- 2. ファイルの中身 ----
 const html = readFileSync(path.join(root, "index.html"), "utf8"), gen = readFileSync(path.join(root, "data.js"), "utf8"), readme = readFileSync(path.join(root, "README.md"), "utf8");
+// ひな形の写し（<!-- 名前:begin〜end -->）はゲームの言葉ではないので外し、Core.kofi・Core.KOFI は写す前の形にもどして見る（shared-workflows の sync-template が足した）
+const gameOwn = (t) => t.replace(/<!-- ([a-z0-9-]+):begin[\s\S]*?<!-- \1:end -->/g, "").split("${Core.KOFI}").join("https://ko-fi.com/satouaaaaa").replace(/Core\.kofi\(("(?:[^"\\]|\\.)*"), ("(?:[^"\\]|\\.)*")\)/g, (m, a, b) => "`<p class=\"note kofi\">" + JSON.parse(a) + "、<a href=\"https://ko-fi.com/satouaaaaa\" target=\"_blank\" rel=\"noopener\">Ko-fi でコーヒー1杯の応援</a>をもらえると、" + JSON.parse(b) + "の励みになります（任意・遊ぶのはずっと無料）。</p>`");
 const ext = [...html.matchAll(/(?:src|href)="(https?:[^"]+)"/g)].map((m) => m[1]).filter((u) => !/^https:\/\/fonts\.googleapis\.com(\/|$)|^https:\/\/ko-fi\.com\/satouaaaaa$/.test(u));
 check("外から読むのは文字（Google Fonts）だけ。スクリプト・広告・解析を入れない（出典のリンクは押したときに開くだけ）", ext.length === 0 && ![...html.matchAll(/<script[^>]+src="([^"]+)"/g)].some((m) => /^https?:/.test(m[1])), ext.join(","));
 check("CSP で通信先を自分だけにしている", /connect-src 'self'/.test(html) && !/connect-src[^;"]*https/.test(html));
@@ -141,13 +144,13 @@ check("Math.random は練習・とことんの種だけ（今日の5問・上級
 check("乱数は sort の比較の中で引かない（ブラウザで引く回数が変わる）", !/\.sort\(\s*\([^)]*\)\s*=>[^\n;]*\b(R|rng|rand|Math\.random)\s*\(/.test(html + gen));
 { const inl = html.split("<script>").slice(1).map((x) => x.split("</" + "script>")[0]).join("\n"); // index.html の中の script も見る（nemuri-kotsu#1 で行の途中に // を入れて画面が動かなくなった）
   check("一行の式の途中にコメント // を足さない（行の残りが消える。rosen-hitofude 2026-11-04・nemuri-kotsu#1）", !/;\s*\/\/[^\n]*;\s*\w/.test((gen + "\n" + inl).split("\n").filter((l) => !l.trim().startsWith("//")).join("\n"))); }
-check("言い方：「絶対」と言い切らない", !/絶対に安全|絶対に来ない|必ず上陸/.test(html + gen + readme));
+check("言い方：「絶対」と言い切らない", !/絶対に安全|絶対に来ない|必ず上陸/.test(gameOwn(html) + gen + readme));
 { const howto = (html.match(/<dialog id="howto"[\s\S]*?<\/dialog>/) || [""])[0], ab = (html.match(/function about\(\)[\s\S]*?\n}/) || [""])[0], dis = (t) => /目安/.test(t) && /日本生気象学会/.test(t) && /環境省/.test(t);
   check("言い方：遊び方・「このゲームについて」・README のどれにも、室内は日本生気象学会の表、外は環境省の式で出した目安であることがある", dis(howto) && dis(ab) && dis(readme), `遊び方 ${dis(howto)}・について ${dis(ab)}・README ${dis(readme)}`); }
-check("写し元（津波の速さくらべ・そのまた元の風力階級よみ・星の等級よみ）の言葉が残っていない（game-dev.md A 手順5）", !/津波|水深|tnhy|TSH|tsunami|新幹線|ピューマ|ジェット|100mを|速さくらべ|風力|ノット|海上警報|備考|fry-|FRY|fuuryoku|風の強さ|等級|[1-6]等星|肉眼|天文|astro|パーセク|ベガ|デネブ|tky-|TKY|toukyu|突風|竜巻/.test(html.replace(/<!-- a11y:begin[\s\S]*?a11y:end -->/, "").replace(/<!-- store:begin[\s\S]*?store:end -->/, "") + gen + readme));
+check("写し元（津波の速さくらべ・そのまた元の風力階級よみ・星の等級よみ）の言葉が残っていない（game-dev.md A 手順5）", !/津波|水深|tnhy|TSH|tsunami|新幹線|ピューマ|ジェット|100mを|速さくらべ|風力|ノット|海上警報|備考|fry-|FRY|fuuryoku|風の強さ|等級|[1-6]等星|肉眼|天文|astro|パーセク|ベガ|デネブ|tky-|TKY|toukyu|突風|竜巻/.test(gameOwn(html).replace(/<!-- a11y:begin[\s\S]*?a11y:end -->/, "").replace(/<!-- store:begin[\s\S]*?store:end -->/, "") + gen + readme));
 check("画面にお笑いの言葉を入れない（本物っぽく）", !/お笑い|ギャグ|ツッコミ|なんでやねん|（うそ）/.test(html + gen));
 check("引き継ぎ：transfer.js をゲームの script より前に、このゲームの記録のキー（記録・文字・復習）だけで読む・depth.js も前に読む", /<script src="transfer\.js" data-game="atsusa-keisan" data-keys="akk-v1,akk-fs,akk-depth"><\/script>\s*<script src="depth\.js" data-game="atsusa-keisan" data-key="akk-depth"><\/script>\s*<\/head>/.test(html) && html.indexOf('src="transfer.js"') < html.indexOf('src="data.js"') && /data-hk/.test(html) && existsSync(path.join(root, "transfer.js")));
-check("好きなだけ遊べる：チケット・回数の上限・🔒で開くモードを入れない（game-dev.md F1・F2）", !/🎫|チケット|すると開く|🔒/.test(html) && !/\blife\b|ELIFE/.test(html));
+check("好きなだけ遊べる：チケット・回数の上限・🔒で開くモードを入れない（game-dev.md F1・F2）", !/🎫|チケット|すると開く|🔒/.test(gameOwn(html)) && !/\blife\b|ELIFE/.test(gameOwn(html)));
 { const og = (k) => (html.match(new RegExp(`<meta (?:property|name)="${k}" content="([^"]+)"`)) || [])[1] || "";
   const png = readFileSync(path.join(root, "og.png"));
   check("SNS で貼ると絵と題が出る（OGP・1200×630・絶対URL）", og("og:title") && og("og:description") && og("og:image") === "https://satou-aaaaa.github.io/atsusa-keisan/og.png" && og("twitter:card") === "summary_large_image" && png.readUInt32BE(16) === 1200 && png.readUInt32BE(20) === 630); }
@@ -352,7 +355,7 @@ try {
     const dragged = await p.evaluate((e) => ({ alive: e.isConnected, v: +e.value }), knob);
     check("気温と湿度を動かす：つまみをドラッグし続けても同じつまみのまま気温が変わり続ける（作り直さない）", dragged.alive && dragged.v >= 33 && (await p.textContent("#labcmp")).includes(`気温${dragged.v}℃`), JSON.stringify(dragged));
     await p.focus("#ltemp"); await p.keyboard.press("End"); await p.focus("#lhum"); await p.keyboard.press("End"); await p.waitForTimeout(50); const c3 = await p.textContent("#labcmp");
-    check("気温と湿度を動かす：±とキーボード（End）で変わり、40℃・湿度100%で室内40・日なたはアラートの基準をこえる", /気温31℃・湿度75%：室内29/.test(c2) && /気温40℃・湿度100%：室内40/.test(c3) && c3.includes("特別警戒アラート") && await p.locator("#tp:disabled").count() === 1 && await p.locator("#hp:disabled").count() === 1, `${c2} / ${c3}`);
+    check("気温と湿度を動かす：±とキーボード（End）で変わり、40℃・湿度100%で室内40・日なたはアラートの基準をこえる", /気温31℃・湿度75%：室内29/.test(c2) && /気温40℃・湿度100%：室内40/.test(c3) && c3.includes("特別警戒アラートの基準の数（35）も") && c3.includes("環境省が地域の予測をもとに") && await p.locator("#tp:disabled").count() === 1 && await p.locator("#hp:disabled").count() === 1, `${c2} / ${c3}`);
     check("気温と湿度を動かす：押す所は44px以上・記録を増やさない", (await p.$$eval("#tm, #tp, #hm, #hp, #ltemp, #lhum, #ex1, #ex2", (b) => b.every((x) => Math.round(x.getBoundingClientRect().height) >= 44))) && JSON.stringify(await mem(p)) === before);
     await p.click("#back"); }
   await p.context().close();
@@ -567,6 +570,12 @@ try {
   }
 } catch (e) { check("ブラウザでの検査が最後まで動く", false, e.stack.split("\n").slice(0, 3).join(" ")); }
 
+// くらべの問題を「読む」で読み上げると、A・B の場所・気温・湿度も読む（絵の中の字だけにしない。PR #1 の CodeRabbit）
+{ const q = await newPage(); await closeHow(q);
+  await q.evaluate(() => { __nm.save((s) => { s.runs.p = { mode: "p", date: __nm.todayKey(), list: ["cin3|say1"], res: [], cur: null, id: "say" }; }); __nm.play("p"); });
+  const say = await q.evaluate(() => { const P = __nm.cur().P, e = document.querySelector("#card .sit[data-a11y-say]"); return [e ? e.textContent : "", P.items.map((x) => `気温${x.t}℃・湿度${x.h}%`)]; });
+  check("くらべの問題の読み上げに A・B の場所・気温・湿度が入る", say[0].startsWith("A：") && say[1].every((t) => say[0].includes(t)), say[0]);
+  await q.context().close(); }
 // 深さの部品（shared-workflows template/qa/depth-check.mjs）
 { const e = await checkDepth(readFileSync(path.join(root, "depth.js"), "utf8")); check("depth.js（自信をかける・復習）の動き", e.length === 0, e.join(" / ")); }
 // 2段目の目安：どの種類にもある（5つのどれか）

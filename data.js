@@ -155,7 +155,7 @@
       const tag = (x) => (x === A ? "A" : "B"), wv = (x) => `${x.pl === "in" ? "" : "約"}${x.w}`;
       const why = `A（${PLACES[A.pl].short}・${A.t}℃・${A.h}%）は${wv(A)}、B（${PLACES[B.pl].short}・${B.t}℃・${B.h}%）は${wv(B)}。`
         + (p.c === "cool" ? `${tag(cool)}は${d}度低いのに上です。` : p.c === "e" ? "気温がちがっても同じです。" : `${tag(hot)}が気温も暑さ指数も上です。`);
-      return { type: "act", media: MEDIA.kurabe, q: CSIT[si], opts: [CANS.a, CANS.b, CANS.e], ans, grp: grpOf(top), gwhy: gwhyOf(top), why, svg: pairSvg(A, B),
+      return { type: "act", media: MEDIA.kurabe, q: CSIT[si], say: `A：${where(A.pl, A.t, A.h)}。B：${where(B.pl, B.t, B.h)}。`, opts: [CANS.a, CANS.b, CANS.e], ans, grp: grpOf(top), gwhy: gwhyOf(top), why, svg: pairSvg(A, B),
         items: [{ ...A, tag: "A", me: true }, { ...B, tag: "B", vs: true }], v: `${si}:${p.t}.${p.hh}.${p.hc}:${flip ? 1 : 0}` };
     };
   }
@@ -179,8 +179,8 @@
     F("yoso", 0, "kihon", "wbgt", "暑さ指数の3つの要素", "気温だけではありません。", "暑さ指数は、湿度・日射などの熱・気温の3つを取り入れます。",
       "環境省は、①湿度、②日射・輻射など周辺の熱環境、③気温の3つを取り入れた指標と説明しています。",
       ["暑さ指数が取り入れている3つは？", "暑さ指数（WBGT）は、何を取り入れた数？", "暑さ指数のもとになる3つの要素は？"], "湿度・日射などの熱・気温", ["気温だけ", "気温・風・雲の量", "気圧・雨の量・気温", "風・雨・雲の量"]),
-    F("alert33", 0, "shishin", "alert", "熱中症警戒アラートは33", "危険（31以上）より上の数です。", "熱中症警戒アラートは、暑さ指数が33に達すると予測されたときに出ます。",
-      "環境省は、日最高の暑さ指数が33（予測値）に達すると予測される場合に、熱中症警戒アラートを出すとしています。",
+    F("alert33", 0, "shishin", "alert", "熱中症警戒アラートは33", "危険（31以上）より上の数です。", "府県予報区などのどこかで暑さ指数33が予測されると、熱中症警戒アラートが出ます。",
+      "環境省は、府県予報区等内のいずれかの地点で日最高の暑さ指数が33（予測値）に達すると予測される場合に出すとしています。",
       ["熱中症警戒アラートが出る暑さ指数は？", "暑さ指数がいくつになりそうだと、熱中症警戒アラート？", "熱中症警戒アラートの目安の数は？"], "33", ["21", "25", "28", "40"]),
     F("kiken31", 0, "shishin", "wbgt", "日常生活の「危険」は31以上", "28は厳重警戒の始まりです。", "日常生活の指針では、暑さ指数31以上が「危険」です。",
       "日常生活の指針（日本生気象学会）では、31以上が危険。高齢者は安静にしていても熱中症になる危険が大きいとされます。",
@@ -244,9 +244,10 @@
     const [kind] = String(tag).split("|"), k = Object.prototype.hasOwnProperty.call(BY, kind) ? BY[kind] : null;
     if (!k) return null;
     const p = k.make(rng(seedOf(tag)), k.lv);
-    return { tag, kind, lv: k.lv, name: k.name, look: k.look, key: k.key, why: k.why, grp: null, gwhy: "", svg: "", items: null, ...p, media: p.media || MEDIA[k.col], src: (p.src || k.src).map((s) => SRC[s]) };
+    return { tag, kind, lv: k.lv, name: k.name, look: k.look, key: k.key, why: k.why, grp: null, gwhy: "", svg: "", items: null, say: "", ...p, media: p.media || MEDIA[k.col], src: (p.src || k.src).map((s) => SRC[s]) };
   }
-  const keyOf = (P) => `${P.kind}:${P.q}:${P.v}`;
+  // 同じ問題かどうか：問い・選び肢（並びは問わない）・場面（場所・気温・湿度）が同じなら同じ（とことんで2度出さない。PR #1 の CodeRabbit）
+  const keyOf = (P) => `${P.kind}:${P.q}:${P.opts.slice().sort().join("/")}:${(P.items || []).map((x) => `${x.pl}${x.t}-${x.h}`).join(",")}`;
 
   function dailyTags(date) {
     const R = rng(seedOf("day:" + date)), e = pickN(R, kindsOf(0), 2), n = pickN(R, kindsOf(1), 2), h = pickN(R, kindsOf(2), 1);
